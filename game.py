@@ -31,7 +31,10 @@ def main_loop(context):
                 # change the value to False, to exit the main loop
                 running = False
 
-        #
+        # TODO:
+        #   For every event in parsed message (critical value) process message
+        #   Includes things like other players position, ball position and score
+
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
             player1.move_left(PLAYER_SPEED)
@@ -41,6 +44,9 @@ def main_loop(context):
             player2.move_left(PLAYER_SPEED)
         if keys[pygame.K_d]:
             player2.move_right(PLAYER_SPEED)
+
+        # TODO:
+        #   Send message with current position (only played player position)
 
         # Game logic
         all.update()
