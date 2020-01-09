@@ -5,7 +5,7 @@ import pygame
 
 
 # Start gameloop
-def main_loop(screen):
+def main_loop(context):
 
     # Initialize players
     player1 = Player(WIDTH / 2, PLAYER_GAP)
@@ -46,13 +46,13 @@ def main_loop(screen):
         all.update()
 
         # Clear clear
-        screen.fill(BLACK)
+        context.surface.fill(BLACK)
 
         # draw center line
-        pygame.draw.rect(screen, WHITE, [0, HEIGHT / 2, WIDTH, 3])
+        pygame.draw.rect(context.surface, WHITE, [0, HEIGHT / 2, WIDTH, 3])
 
         # Game render
-        all.draw(screen)
+        all.draw(context.surface)
 
         # Update screen
         pygame.display.flip()
