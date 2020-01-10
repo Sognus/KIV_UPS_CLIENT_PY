@@ -16,6 +16,8 @@ class Context:
         self.menu_game = None
         # Games clock
         self.clock = None
+        # Message parser
+        self.parser = None
 
     def menu_background_draw(self):
         if self.surface is not None:

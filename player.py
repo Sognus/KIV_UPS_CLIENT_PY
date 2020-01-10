@@ -8,6 +8,9 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
 
+        # Flag if player is played
+        self.control = False
+
         # Set player coords
         self.x = x
         self.y = y
@@ -19,8 +22,9 @@ class Player(pygame.sprite.Sprite):
         self.image.fill(BLACK)
         self.image.set_colorkey(BLACK)
 
-        # Draw the car (a rectangle!)
-        pygame.draw.rect(self.image, WHITE, [0, 0, self.width, self.height])
+        # Draw a player colored by played flag
+        color = GREEN if self.control else RED
+        pygame.draw.rect(self.image, color, [0, 0, self.width, self.height])
 
         # Fetch the rectangle object that has the dimensions of the image.
         self.rect = self.image.get_rect()
