@@ -14,13 +14,47 @@ def menu_player_action_test():
     context.menu_game.disable()
 
 
+def menu_player_action_refresh():
+    context.menu_game.disable()
+
+    # Reinitialize menu
+    menu_player_init()
+
+    # Add player_menu buttons
+    context.menu_game.add_option("TEST", menu_player_action_test)
+    context.menu_game.add_option("REFRESH2", menu_player_action_refresh)
+
+
+def menu_player_init():
+    # Connected menu
+    context.menu_game = pygameMenu.Menu(context.surface,
+                                        bgfun=context.menu_background_draw,
+                                        color_selected=WHITE,
+                                        font=pygameMenu.font.FONT_BEBAS,
+                                        font_color=WHITE,
+                                        font_size=40,
+                                        font_size_title=30,
+                                        menu_alpha=100,
+                                        menu_color=(20, 67, 109),
+                                        menu_height=HEIGHT,
+                                        menu_width=WIDTH,
+                                        onclose=pygameMenu.events.DISABLE_CLOSE,
+                                        option_shadow=False,
+                                        title='GAME',
+                                        window_height=HEIGHT,
+                                        window_width=WIDTH,
+                                        back_box=False,
+                                        menu_color_title=(20, 32, 52),
+                                        )
+
+
 def menu_connect_action():
     try:
         data = context.menu_connect.get_input_data()
         context.client = Client(data["ip"], int(data["port"]))
+        print("Connection established\n")
         context.parser = MessageParser(context.client)
         context.parser.start()
-        print("Connection established")
         context.menu_connect.disable()
     except ConnectionRefusedError:
         print("Could not connect to server - connection refused")
@@ -34,6 +68,9 @@ def menu_start(client_context):
     # GLOBAL CLIENT CONTEXT
     global context
     context = client_context
+
+    global test
+    test = 0
 
     # INIT PYGAME
     pygame.init()
@@ -70,28 +107,11 @@ def menu_start(client_context):
     context.menu_connect.add_option("CONNECT", menu_connect_action)
 
     # Connected menu
-    context.menu_game = pygameMenu.Menu(context.surface,
-                                        bgfun=client_context.menu_background_draw,
-                                        color_selected=WHITE,
-                                        font=pygameMenu.font.FONT_BEBAS,
-                                        font_color=WHITE,
-                                        font_size=40,
-                                        font_size_title=30,
-                                        menu_alpha=100,
-                                        menu_color=(20, 67, 109),
-                                        menu_height=HEIGHT,
-                                        menu_width=WIDTH,
-                                        onclose=pygameMenu.events.DISABLE_CLOSE,
-                                        option_shadow=False,
-                                        title='GAME',
-                                        window_height=HEIGHT,
-                                        window_width=WIDTH,
-                                        back_box=False,
-                                        menu_color_title=(20, 32, 52),
-                                        )
+    menu_player_init()
 
     # Add player_menu buttons
     client_context.menu_game.add_option("TEST", menu_player_action_test)
+    client_context.menu_game.add_option("REFRESH", menu_player_action_refresh)
 
     # -------------------------------------------------------------------------
     # Start menu
@@ -105,7 +125,7 @@ def menu_start(client_context):
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
-                exit()
+                exit(0)
 
         if context.menu_connect.is_enabled():
             # Connection menu
