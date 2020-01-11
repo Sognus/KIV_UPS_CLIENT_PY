@@ -2,7 +2,7 @@ from constants import *
 from colors import *
 from client import *
 from message import *
-from collections import deque
+from datetime import datetime
 import game
 import pygame
 import pygameMenu
@@ -11,19 +11,83 @@ import pygameMenu
 global context
 
 
+# Empty action to satisfy buttons
+def menu_nothing():
+    pass
+
+
 def menu_player_action_test():
     context.menu_game.disable()
 
 
-def menu_player_action_refresh():
+def menu_player_action_disconnect():
+    request_disconnect(context)
     context.menu_game.disable()
+    context.menu_connect.enable()
+
+
+def menu_player_action_refresh():
+    # Disable game menu if its enabled
+    try:
+        context.menu_game.disable()
+    except:
+        pass
 
     # Reinitialize menu
     menu_player_init()
 
+    # Ask server for game IDS
+    request_id = context.client.messageSent
+    print("request game list")
+    request_msg = "<id:{};rid:{};type:2300;|playerID:{};>".format(request_id, request_id, context.client.playerID)
+    context.client.socket.send(bytes(request_msg, "ascii"))
+    context.client.messageSent = request_id + 1
+
+    # Wait for response maximum of 2 sec
+    message = None
+    start = datetime.now()
+    wait = True
+    while wait:
+        for msg in list(context.parser.messages):
+            if int(msg.id) == int(request_id):
+                message = msg
+                wait = False
+        check = datetime.now()
+        delta = check - start
+        if delta.total_seconds() > 2:
+            wait = False
+
+    # ID List
+    id_list = list()
+
+    id_base = r"gameID(\d+)"
+    id_pattern = re.compile(id_base)
+
+    # We have message - we add it to ID List
+    if message is not None:
+        for key in message.content:
+            if re.match(id_pattern, str(key)):
+                print(key)
+                id_list.append(message.content[key])
+
+    # If ID list is empty
+    if len(id_list) < 1:
+        context.menu_game.add_option("NO GAMES AVAILABLE", menu_nothing)
+    else:
+        # Build selector
+        for id in id_list:
+            name = "GAME #{}".format(id)
+            context.menu_game.add_option(name, menu_nothing)
+            # TODO: replace menu_nothing with join game
+
     # Add player_menu buttons
+    context.menu_game.add_option("REFRESH", menu_player_action_refresh)
+
+    # Disconnect button
+    context.menu_game.add_option("DISCONNECT", menu_player_action_disconnect)
+
+    # Temporary menu buttons
     context.menu_game.add_option("TEST", menu_player_action_test)
-    context.menu_game.add_option("REFRESH2", menu_player_action_refresh)
 
 
 def menu_player_init():
@@ -67,7 +131,7 @@ def menu_connect_action():
         context.client.socket.send(bytes(register_msg, "ascii"))
 
         # Wait a while - if server does not respond in 1 sec its not worth to talk with it
-        time.sleep(1)
+        time.sleep(2)
 
         # Get message from parser
         msg = context.parser.messages.pop()
@@ -78,6 +142,7 @@ def menu_connect_action():
                 context.client.playerID = playerID
                 print("Connected to server as player ID: {}".format(playerID))
                 context.menu_connect.disable()
+                context.menu_game.enable()
             else:
                 raise Exception("Could not connect to server - {}".format(msg.get_value("msg")))
         else:
@@ -132,7 +197,7 @@ def menu_start(client_context):
 
     # Add Menu input
     context.menu_connect.add_text_input("Name: ", default="", maxchar=20, textinput_id="name")
-    context.menu_connect.add_text_input("IP: ", default="127.0.0.1", maxchar=15, textinput_id="ip")
+    context.menu_connect.add_text_input("IP: ", default="192.168.0.101", maxchar=15, textinput_id="ip")
     context.menu_connect.add_text_input("Port: ", default="8080", maxchar=5, textinput_id="port")
     context.menu_connect.add_option("CONNECT", menu_connect_action)
 
@@ -140,8 +205,11 @@ def menu_start(client_context):
     menu_player_init()
 
     # Add player_menu buttons
-    client_context.menu_game.add_option("TEST", menu_player_action_test)
-    client_context.menu_game.add_option("REFRESH", menu_player_action_refresh)
+    context.menu_game.add_option("REFRESH", menu_player_action_refresh)
+    # Disconnect button
+    context.menu_game.add_option("DISCONNECT", menu_player_action_disconnect)
+    # Temporary menu buttons
+    context.menu_game.add_option("TEST", menu_player_action_test)
 
     # -------------------------------------------------------------------------
     # Start menu

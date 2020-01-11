@@ -50,7 +50,8 @@ class MessageParser(threading.Thread):
         # Start message parse thread
         while self.running:
             try:
-                msg = self.client.socket.recv(256)
+                msg = bytes()
+                data = self.client.socket.recv(512)
             except socket.error as e:
                 err = e.args[0]
                 if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
@@ -61,9 +62,13 @@ class MessageParser(threading.Thread):
                     print(e)
                     break
             else:
+                if not data:
+                    continue
+                msg += data
+
                 data_text = msg.decode(encoding="ascii")
                 # Print data we received
-                print("data received: " + data_text)
+                # print("data received: " + data_text)
 
                 # Check if message start with <
                 if data_text[0] != '<':

@@ -89,7 +89,7 @@ def main_loop(context):
             context.surface.fill(BLACK)
 
             # draw center line
-            pygame.draw.rect(context.surface, WHITE, [0, HEIGHT / 2, WIDTH, 3])
+            pygame.draw.rect(context.surface, WHITE, [0, HEIGHT / 2, WIDTH, 1])
 
             # Game render
             all.draw(context.surface)

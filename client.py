@@ -8,6 +8,7 @@ class Client:
         self.port = port
         self.socket = None
         self.playerID = None
+        self.messageSent = 0
         self.connect()
 
     def connect(self):
@@ -19,17 +20,26 @@ def request_disconnect(context):
     # Cleanup connection
     print("Cleaning up connection")
 
-    # Connection failed, disconnect client
-    context.parser.running = False
+    try:
+        # Connection failed, disconnect client
+        context.parser.running = False
+    except:
+        pass
 
     try:
         # Try to send server info to cleanup connection
-        disconnect_msg = "<id:2;rid:2;type:20;|playerID:{};>".format(context.client.playerID)
+        disconnect_msg = "<id:{};rid:0;type:20;|playerID:{};>".format(context.client.messageSent,
+                                                                      context.client.playerID)
+        context.client.messageSent = context.client.messageSent + 1
         context.client.socket.send(bytes(disconnect_msg, "ascii"))
     except:
         # Ignore errors
         pass
 
-    context.client.socket.close()
+    try:
+        context.client.socket.close()
+    except:
+        pass
+
     context.client = None
     context.parser = None
