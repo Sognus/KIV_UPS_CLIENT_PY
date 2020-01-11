@@ -2,6 +2,7 @@ from constants import *
 from colors import *
 from client import *
 from message import *
+from collections import deque
 import game
 import pygame
 import pygameMenu
@@ -51,17 +52,46 @@ def menu_player_init():
 def menu_connect_action():
     try:
         data = context.menu_connect.get_input_data()
+
+        if len(data["name"]) < 1:
+            print("Could not connect to server - name cannot be empty!")
+            return
+
         context.client = Client(data["ip"], int(data["port"]))
         print("Connection established\n")
         context.parser = MessageParser(context.client)
         context.parser.start()
-        context.menu_connect.disable()
+
+        # Send register request
+        register_msg = "<id:1;rid:1;type:1000;|name:{};>".format(data["name"])
+        context.client.socket.send(bytes(register_msg, "ascii"))
+
+        # Wait a while - if server does not respond in 1 sec its not worth to talk with it
+        time.sleep(1)
+
+        # Get message from parser
+        msg = context.parser.messages.pop()
+
+        if msg:
+            if msg.get_value("status") == "ok":
+                playerID = int(msg.get_value("playerID"))
+                context.client.playerID = playerID
+                print("Connected to server as player ID: {}".format(playerID))
+                context.menu_connect.disable()
+            else:
+                raise Exception("Could not connect to server - {}".format(msg.get_value("msg")))
+        else:
+            raise Exception("no valid response from server")
+
     except ConnectionRefusedError:
         print("Could not connect to server - connection refused")
+        request_disconnect(context)
     except ValueError:
         print("Could not connect to server - bad input data")
+        request_disconnect(context)
     except Exception as e:
         print(f"Could not connect to server - {e}")
+        request_disconnect(context)
 
 
 def menu_start(client_context):
