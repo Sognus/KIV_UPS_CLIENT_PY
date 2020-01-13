@@ -1,12 +1,13 @@
 from constants import *
 from colors import *
 from player import *
+from ball import *
 import pygame
 
 
 class Game:
 
-    def __init__(self, player1, player2):
+    def __init__(self, player1, player2, ball):
         # Player 1 - object
         self.player1 = player1
         # Player 1 - score
@@ -15,6 +16,9 @@ class Game:
         self.player2 = player2
         # Player 2 - score
         self.score2 = 0
+
+        # Ball
+        self.ball = ball
 
         # Game - paused flag
         self.paused = True
@@ -26,13 +30,17 @@ def main_loop(context):
     player1 = Player(WIDTH / 2, PLAYER_GAP)
     player2 = Player(WIDTH / 2, HEIGHT - PLAYER_GAP)
 
+    # Initialize ball
+    ball = Ball(WIDTH/2, HEIGHT / 2, 0)
+
     # Initialize Game
-    game = Game(player1, player2)
+    game = Game(player1, player2, ball)
 
     # Initialize game groups
     all = pygame.sprite.RenderUpdates()
     all.add(player1)
     all.add(player2)
+    all.add(ball)
 
     # Initialize pause text
     font_pause = pygame.font.Font('freesansbold.ttf', 32)
@@ -53,6 +61,7 @@ def main_loop(context):
             # only do something if the event is of type QUIT
             if event.type == pygame.QUIT:
                 # change the value to False, to exit the main loop
+                context.menu_game.enable()
                 running = False
 
         # TODO:

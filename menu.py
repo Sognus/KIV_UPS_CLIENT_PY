@@ -16,6 +16,52 @@ def menu_nothing():
     pass
 
 
+# TODO: Implement
+def menu_player_action_game_join(gameID):
+    print("I want to join game: " + gameID)
+
+
+# TODO: Implement
+def menu_player_action_game_create():
+    print("Requesting game create")
+
+    # Send request to server to join game
+    request_id = context.client.messageSent
+    request_msg = "<id:{};rid:{};type:2000;|playerID:{};>".format(request_id, request_id, context.client.playerID)
+    context.client.socket.send(bytes(request_msg, "ascii"))
+    context.client.messageSent = request_id + 1
+
+    # Wait for response maximum of 2 sec
+    message = None
+    start = datetime.now()
+    wait = True
+    while wait:
+        for msg in list(context.parser.messages):
+            if int(msg.id) == int(request_id):
+                message = msg
+                wait = False
+        check = datetime.now()
+        delta = check - start
+        if delta.total_seconds() > 2:
+            wait = False
+
+    if message is None:
+        print("Cannot create game - wait for response timed out")
+    else:
+        status = message.get_value("status")
+        if status is None:
+            print("Cannot create game - bad server response")
+            # TODO: inform server
+        else:
+            # Game created
+            if status == "ok":
+                # Enable game
+                context.menu_game.disable()
+            else:
+                status_msg = "unknown error" if message.get_value("msg") is None else message.get_value("msg")
+                print("Game was not created: " + status_msg)
+
+
 def menu_player_action_test():
     context.menu_game.disable()
 
@@ -36,9 +82,11 @@ def menu_player_action_refresh():
     # Reinitialize menu
     menu_player_init()
 
+    # Add button to join game
+    context.menu_game.add_option("CREATE GAME", menu_player_action_game_create)
+
     # Ask server for game IDS
     request_id = context.client.messageSent
-    print("request game list")
     request_msg = "<id:{};rid:{};type:2300;|playerID:{};>".format(request_id, request_id, context.client.playerID)
     context.client.socket.send(bytes(request_msg, "ascii"))
     context.client.messageSent = request_id + 1
@@ -77,8 +125,7 @@ def menu_player_action_refresh():
         # Build selector
         for id in id_list:
             name = "GAME #{}".format(id)
-            context.menu_game.add_option(name, menu_nothing)
-            # TODO: replace menu_nothing with join game
+            context.menu_game.add_option(name, menu_player_action_game_join, id)
 
     # Add player_menu buttons
     context.menu_game.add_option("REFRESH", menu_player_action_refresh)
@@ -197,19 +244,12 @@ def menu_start(client_context):
 
     # Add Menu input
     context.menu_connect.add_text_input("Name: ", default="", maxchar=20, textinput_id="name")
-    context.menu_connect.add_text_input("IP: ", default="192.168.0.101", maxchar=15, textinput_id="ip")
+    context.menu_connect.add_text_input("IP: ", default="192.168.0.200", maxchar=15, textinput_id="ip")
     context.menu_connect.add_text_input("Port: ", default="8080", maxchar=5, textinput_id="port")
     context.menu_connect.add_option("CONNECT", menu_connect_action)
 
     # Connected menu
     menu_player_init()
-
-    # Add player_menu buttons
-    context.menu_game.add_option("REFRESH", menu_player_action_refresh)
-    # Disconnect button
-    context.menu_game.add_option("DISCONNECT", menu_player_action_disconnect)
-    # Temporary menu buttons
-    context.menu_game.add_option("TEST", menu_player_action_test)
 
     # -------------------------------------------------------------------------
     # Start menu
@@ -231,6 +271,7 @@ def menu_start(client_context):
         else:
             if context.menu_game.is_enabled():
                 # Player menu - Starts after Connect menu is disabled
+                menu_player_action_refresh()
                 context.menu_game.mainloop(events)
             else:
                 # Main game loop

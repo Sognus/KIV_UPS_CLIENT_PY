@@ -21,7 +21,7 @@ class Context:
 
     def menu_background_draw(self):
         if self.surface is not None:
-            self.surface.fill(BLACK)
+            self.surface.fill((20, 67, 109))
 
 
 def main():
