@@ -18,6 +18,8 @@ class Context:
         self.clock = None
         # Message parser
         self.parser = None
+        # Indicate which User is player playing as
+        self.playAs = None
 
     def menu_background_draw(self):
         if self.surface is not None:

@@ -27,8 +27,15 @@ class Game:
 # Start gameloop
 def main_loop(context):
     # Initialize players
-    player1 = Player(WIDTH / 2, PLAYER_GAP)
-    player2 = Player(WIDTH / 2, HEIGHT - PLAYER_GAP)
+    if context.playAs == "1":
+        player1 = Player(WIDTH / 2, PLAYER_GAP, control=True)
+    else:
+        player1 = Player(WIDTH / 2, PLAYER_GAP)
+
+    if context.playAs == "2":
+        player2 = Player(WIDTH / 2, HEIGHT - PLAYER_GAP, control=True)
+    else:
+        player2 = Player(WIDTH / 2, HEIGHT - PLAYER_GAP)
 
     # Initialize ball
     ball = Ball(WIDTH/2, HEIGHT / 2, 0)
@@ -70,13 +77,16 @@ def main_loop(context):
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
-            game.player1.move_left(PLAYER_SPEED)
+            if game.player1.control:
+                game.player1.move_left(PLAYER_SPEED)
+            if game.player2.control:
+                game.player2.move_left(PLAYER_SPEED)
+
         if keys[pygame.K_RIGHT]:
-            game.player1.move_right(PLAYER_SPEED)
-        if keys[pygame.K_a]:
-            game.player2.move_left(PLAYER_SPEED)
-        if keys[pygame.K_d]:
-            game.player2.move_right(PLAYER_SPEED)
+            if game.player1.control:
+                game.player1.move_right(PLAYER_SPEED)
+            if game.player2.control:
+                game.player2.move_right(PLAYER_SPEED)
 
         if keys[pygame.K_u]:
             game.paused = not game.paused

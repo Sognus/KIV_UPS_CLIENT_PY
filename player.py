@@ -5,11 +5,11 @@ import pygame
 
 class Player(pygame.sprite.Sprite):
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, control=False):
         super().__init__()
 
         # Flag if player is played
-        self.control = False
+        self.control = control
 
         # Set player coords
         self.x = x

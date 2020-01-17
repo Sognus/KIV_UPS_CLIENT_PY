@@ -55,6 +55,8 @@ def menu_player_action_game_create():
         else:
             # Game created
             if status == "ok":
+                # Indicate who as player playing as
+                context.playAs = "1"
                 # Enable game
                 context.menu_game.disable()
             else:

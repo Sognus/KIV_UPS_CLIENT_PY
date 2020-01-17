@@ -11,7 +11,7 @@ class Ball(pygame.sprite.Sprite):
         self.x = x
         self.y = y
         self.angle = 45
-        self.speed = 1
+        self.speed = 5
         self.maxspeed = 30
 
         # Setup size - radius
@@ -38,6 +38,8 @@ class Ball(pygame.sprite.Sprite):
         self.rect.y = self.y - self.size
 
     def update(self):
+        self.update_coords()
+        """"
         # TODO: Move logic to server
         radians = self.angle * (math.pi / 180)
         velocity_x = math.cos(radians)
@@ -54,5 +56,4 @@ class Ball(pygame.sprite.Sprite):
             self.angle = 360 - self.angle
             if self.speed <= self.maxspeed:
                 self.speed += 3
-
-        self.update_coords()
+        """
