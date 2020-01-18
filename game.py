@@ -38,7 +38,7 @@ def main_loop(context):
         player2 = Player(WIDTH / 2, HEIGHT - PLAYER_GAP)
 
     # Initialize ball
-    ball = Ball(WIDTH/2, HEIGHT / 2, 0)
+    ball = Ball(WIDTH / 2, HEIGHT / 2, 0)
 
     # Initialize Game
     game = Game(player1, player2, ball)
@@ -115,14 +115,12 @@ def main_loop(context):
             all.draw(context.surface)
 
             # Draw score
-            # Draw score
             score_font = pygame.font.Font('freesansbold.ttf', 20)
 
             score1_string = "{:02d}".format(game.score1)
             score1_text = score_font.render(score1_string, True, WHITE, BLACK)
             score1_rect = score1_text.get_rect()
             context.surface.blit(score1_text, (WIDTH - 30, HEIGHT // 2 - 25))
-
 
             score2_string = "{:02d}".format(game.score2)
             score2_text = score_font.render(score2_string, True, WHITE, BLACK)

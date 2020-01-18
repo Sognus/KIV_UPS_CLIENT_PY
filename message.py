@@ -70,9 +70,16 @@ class MessageParser(threading.Thread):
                 # Print data we received
                 # print("data received: " + data_text)
 
+                print(data_text)
+
+
                 # Check if message start with <
-                if data_text[0] != '<':
-                    continue
+                bad_counter = 0
+                while len(data_text) > 0 and data_text[0] != '<':
+                    data_text = data_text[1:]
+                    if bad_counter > 512:
+                        continue
+                    bad_counter = bad_counter + 1
 
                 # Check message header
                 regex_base = r"^\<id:(\d+);rid:(\d+);type:(\d+);\|(.*)>$"

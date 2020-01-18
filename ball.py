@@ -23,7 +23,7 @@ class Ball(pygame.sprite.Sprite):
         self.image.set_colorkey(BLACK)
 
         # Draw circle
-        pygame.draw.circle(self.image, GREEN, [self.size,self.size], self.size, 0)
+        pygame.draw.circle(self.image, PURPLE, [self.size,self.size], self.size, 0)
 
         # Fetch the rectangle object that has the dimensions of the image.
         self.rect = self.image.get_rect()

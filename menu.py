@@ -176,24 +176,33 @@ def menu_connect_action():
         context.parser.start()
 
         # Send register request
-        register_msg = "<id:1;rid:1;type:1000;|name:{};>".format(data["name"])
+        request_id = context.client.messageSent
+        register_msg = "<id:{};rid:{};type:1000;|name:{};>".format(request_id, request_id, data["name"])
         context.client.socket.send(bytes(register_msg, "ascii"))
 
-        # Wait a while - if server does not respond in 1 sec its not worth to talk with it
-        time.sleep(2)
+        # Wait for response maximum of 2 sec
+        message = None
+        start = datetime.now()
+        wait = True
+        while wait:
+            for msg in list(context.parser.messages):
+                if int(msg.id) == int(request_id):
+                    message = msg
+                    wait = False
+            check = datetime.now()
+            delta = check - start
+            if delta.total_seconds() > 2:
+                wait = False
 
-        # Get message from parser
-        msg = context.parser.messages.pop()
-
-        if msg:
-            if msg.get_value("status") == "ok":
-                playerID = int(msg.get_value("playerID"))
+        if message is not None:
+            if message.get_value("status") == "ok":
+                playerID = int(message.get_value("playerID"))
                 context.client.playerID = playerID
                 print("Connected to server as player ID: {}".format(playerID))
                 context.menu_connect.disable()
                 context.menu_game.enable()
             else:
-                raise Exception("Could not connect to server - {}".format(msg.get_value("msg")))
+                raise Exception("Could not connect to server - {}".format(message.get_value("msg")))
         else:
             raise Exception("no valid response from server")
 
