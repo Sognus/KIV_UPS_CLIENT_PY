@@ -69,6 +69,7 @@ def main_loop(context):
             if event.type == pygame.QUIT:
                 # change the value to False, to exit the main loop
                 context.menu_game.enable()
+                print("game end")
                 running = False
 
         # TODO:
@@ -112,6 +113,21 @@ def main_loop(context):
 
             # Game render
             all.draw(context.surface)
+
+            # Draw score
+            # Draw score
+            score_font = pygame.font.Font('freesansbold.ttf', 20)
+
+            score1_string = "{:02d}".format(game.score1)
+            score1_text = score_font.render(score1_string, True, WHITE, BLACK)
+            score1_rect = score1_text.get_rect()
+            context.surface.blit(score1_text, (WIDTH - 30, HEIGHT // 2 - 25))
+
+
+            score2_string = "{:02d}".format(game.score2)
+            score2_text = score_font.render(score2_string, True, WHITE, BLACK)
+            score2_rect = score2_text.get_rect()
+            context.surface.blit(score2_text, (WIDTH - 30, HEIGHT // 2 + 5))
 
         # Update screen
         pygame.display.flip()
