@@ -23,6 +23,82 @@ class Game:
         # Game - paused flag
         self.paused = True
 
+    # Update game state
+    def update_state(self, message):
+        if message is None:
+            return
+
+        # Check message content (LONG)
+        player1x = message.get_value("player1x")
+        if player1x is None:
+            return
+
+        player1y = message.get_value("player1y")
+        if player1y is None:
+            return
+
+        player2x = message.get_value("player2x")
+        if player2x is None:
+            return
+
+        player2y = message.get_value("player2y")
+        if player2y is None:
+            return
+
+        score1 = message.get_value("score1")
+        if score1 is None:
+            return
+
+        score2 = message.get_value("score2")
+        if score2 is None:
+            return
+
+        ballx = message.get_value("ballx")
+        if ballx is None:
+            return
+
+        bally = message.get_value("bally")
+        if bally is None:
+            return
+
+        ballspeed = message.get_value("ballspeed")
+        if ballspeed is None:
+            return
+
+        ballrotation = message.get_value("ballrotation")
+        if ballrotation is None:
+            return
+
+        paused = message.get_value("paused")
+        if paused is None:
+            return
+
+        print("message checked updating game state")
+
+        # Set game state - players
+        try:
+            self.player1.x = int(player1x)
+            self.player1.y = int(player1y)
+
+            self.player2.x = int(player2x)
+            self.player2.y = int(player2y)
+
+            # Set game state - score
+            self.score1 = int(score1)
+            self.score2 = int(score2)
+
+            # Set game state - ball
+            self.ball.x = int(ballx)
+            self.ball.y = int(bally)
+            self.ball.speed = int(ballspeed)
+            self.ball.angle = int(ballrotation)
+
+            # Set game state - paused
+            self.paused = False
+        except:
+            pass
+
+
 
 # Start gameloop
 def main_loop(context):
@@ -72,9 +148,12 @@ def main_loop(context):
                 print("game end")
                 running = False
 
-        # TODO:
-        #   For every event in parsed message (critical value) process message
-        #   Includes things like other players position, ball position and score
+        # Parse all messages
+        if context.parser.messages_game:
+            server_message = context.parser.messages_game.pop()
+            # GameState update message
+            if server_message.type == 2400:
+                game.update_state(server_message)
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:

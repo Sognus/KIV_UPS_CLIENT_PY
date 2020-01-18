@@ -1,3 +1,5 @@
+import sys
+
 from constants import *
 from colors import *
 from client import *
@@ -6,6 +8,7 @@ from datetime import datetime
 import game
 import pygame
 import pygameMenu
+import re
 
 # Global context class
 global context
@@ -40,6 +43,7 @@ def menu_player_action_game_create():
             if int(msg.id) == int(request_id):
                 message = msg
                 wait = False
+                break
         check = datetime.now()
         delta = check - start
         if delta.total_seconds() > 2:
