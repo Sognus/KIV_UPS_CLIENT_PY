@@ -187,7 +187,6 @@ def main_loop(context):
             # GameState update message
             if server_message.type == 2400:
                 game.update_state(server_message)
-                print("{}: ID={} {}".format(datetime.now(), server_message.id, server_message.content))
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
