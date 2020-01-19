@@ -30,9 +30,9 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
         # Update coordinates for draw
-        self._update_coords()
+        self.update_coords()
 
-    def _update_coords(self):
+    def update_coords(self):
         self.rect.x = self.x - self.width / 2
         self.rect.y = self.y
 
@@ -41,11 +41,11 @@ class Player(pygame.sprite.Sprite):
         if self.x + self.width / 2 + pixels <= WIDTH:
             self.x = self.x + pixels
         # Update draw coordinates
-        self._update_coords()
+        self.update_coords()
 
     def move_left(self, pixels):
         # Check if we can move to right then move
         if self.x - self.width / 2 - pixels >= 0:
             self.x -= pixels
         # Update draw coordinates
-        self._update_coords()
+        self.update_coords()

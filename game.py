@@ -1,3 +1,6 @@
+import sys
+from datetime import datetime
+
 from constants import *
 from colors import *
 from player import *
@@ -7,7 +10,7 @@ import pygame
 
 class Game:
 
-    def __init__(self, player1, player2, ball):
+    def __init__(self, player1, player2, ball, context):
         # Player 1 - object
         self.player1 = player1
         # Player 1 - score
@@ -22,6 +25,9 @@ class Game:
 
         # Game - paused flag
         self.paused = True
+
+        # Server context
+        self.context = context
 
     # Update game state
     def update_state(self, message):
@@ -73,31 +79,58 @@ class Game:
         if paused is None:
             return
 
-        print("message checked updating game state")
-
         # Set game state - players
         try:
-            self.player1.x = int(player1x)
-            self.player1.y = int(player1y)
+            if self.context.playAs == "2":
+                # Update player we dont play as
+                self.player1.x = float(player1x)
+                self.player1.y = float(player1y)
+                self.player1.update_coords()
 
-            self.player2.x = int(player2x)
-            self.player2.y = int(player2y)
+            if self.context.playAs == "1":
+                # Update player we dont play as
+                self.player2.x = float(player2x)
+                self.player2.y = float(player2y)
+                self.player2.update_coords()
 
             # Set game state - score
             self.score1 = int(score1)
             self.score2 = int(score2)
 
             # Set game state - ball
-            self.ball.x = int(ballx)
-            self.ball.y = int(bally)
+            self.ball.x = float(ballx)
+            self.ball.y = float(bally)
             self.ball.speed = int(ballspeed)
             self.ball.angle = int(ballrotation)
+            self.ball.update_coords()
 
             # Set game state - paused
             self.paused = False
-        except:
+        except Exception as e:
             pass
 
+
+def build_player_update_message(context, game):
+    if context is None:
+        return ""
+    if game is None:
+        return ""
+
+    # Get player we play as
+    player = None
+    if context.playAs == "1":
+        player = game.player1
+    if context.playAs == "2":
+        player = game.player2
+
+    if player is None:
+        return ""
+
+    msg = "<id:{};rid:{};type:3000;|x:{};y:{};paused:{};playerID:{};>".format(context.client.messageSent,
+                                                                              context.client.messageSent, player.x,
+                                                                              player.y, game.paused,
+                                                                              context.client.playerID)
+    return msg
 
 
 # Start gameloop
@@ -117,7 +150,7 @@ def main_loop(context):
     ball = Ball(WIDTH / 2, HEIGHT / 2, 0)
 
     # Initialize Game
-    game = Game(player1, player2, ball)
+    game = Game(player1, player2, ball, context)
 
     # Initialize game groups
     all = pygame.sprite.RenderUpdates()
@@ -149,11 +182,12 @@ def main_loop(context):
                 running = False
 
         # Parse all messages
-        if context.parser.messages_game:
+        while context.parser.messages_game:
             server_message = context.parser.messages_game.popleft()
             # GameState update message
             if server_message.type == 2400:
                 game.update_state(server_message)
+                print("{}: ID={} {}".format(datetime.now(), server_message.id, server_message.content))
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
@@ -171,8 +205,9 @@ def main_loop(context):
         if keys[pygame.K_u]:
             game.paused = not game.paused
 
-        # TODO:
-        #   Send message with current position (only played player position)
+        # Send current position to server
+        msg = build_player_update_message(context, game)
+        context.client.socket.send(bytes(msg, "ascii"))
 
         # Clear screen
         context.surface.fill(BLACK)
