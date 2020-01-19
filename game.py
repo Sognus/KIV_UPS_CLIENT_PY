@@ -150,7 +150,7 @@ def main_loop(context):
 
         # Parse all messages
         if context.parser.messages_game:
-            server_message = context.parser.messages_game.pop()
+            server_message = context.parser.messages_game.popleft()
             # GameState update message
             if server_message.type == 2400:
                 game.update_state(server_message)
