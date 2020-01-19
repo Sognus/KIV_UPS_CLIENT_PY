@@ -46,7 +46,6 @@ class DataReader(threading.Thread):
             except socket.error as e:
                 err = e.args[0]
                 if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
-                    time.sleep(0.3)
                     continue
                 else:
                     # a "real" error occurred
