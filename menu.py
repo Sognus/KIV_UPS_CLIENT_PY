@@ -21,7 +21,50 @@ def menu_nothing():
 
 # TODO: Implement
 def menu_player_action_game_join(gameID):
-    print("I want to join game: " + gameID)
+    # gameID = ID if game to join
+    print("Requesting game join")
+
+    request_id = context.client.messageSent
+    request_msg = "<id:{};rid:{};type:2100;|playerID:{};gameID:{};>".format(request_id, request_id,
+    context.client.playerID, gameID)
+    context.client.socket.send(bytes(request_msg, "ascii"))
+    context.client.messageSent = request_id + 1
+
+    # Wait for response maximum of 2 sec
+    message = None
+    start = datetime.now()
+    wait = True
+    while wait:
+        for msg in list(context.parser.messages):
+            if int(msg.id) == int(request_id):
+                message = msg
+                wait = False
+                break
+        check = datetime.now()
+        delta = check - start
+        if delta.total_seconds() > 2:
+            wait = False
+
+    if message is None:
+        print("Cannot join game - wait for response timed out")
+    else:
+        status = message.get_value("status")
+        if status is None:
+            print("Cannot join game - bad server response")
+        else:
+            # Game join?
+            if status == "ok":
+                # Indicate who as player playing as
+                playAs = message.get_value("player")
+                if playAs is None:
+                    print("Cannot create game - bad server response")
+                else:
+                    context.playAs = playAs
+                    # Enable game
+                    context.menu_game.disable()
+            else:
+                status_msg = "unknown error" if message.get_value("msg") is None else message.get_value("msg")
+                print("Game was not joined: " + status_msg)
 
 
 # TODO: Implement

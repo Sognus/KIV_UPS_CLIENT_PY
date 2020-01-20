@@ -15,7 +15,7 @@ class Ball(pygame.sprite.Sprite):
         self.maxspeed = 30
 
         # Setup size - radius
-        self.size = 10
+        self.size = BALL_SIZE
 
         # Setup surface
         self.image = pygame.Surface([self.size * 2, self.size * 2])
@@ -39,21 +39,3 @@ class Ball(pygame.sprite.Sprite):
 
     def update(self):
         self.update_coords()
-        """"
-        # TODO: Move logic to server
-        radians = self.angle * (math.pi / 180)
-        velocity_x = math.cos(radians)
-        velicity_y = math.sin(radians)
-        self.x += velocity_x * self.speed
-        self.y += velicity_y * self.speed
-
-        # Bounce
-        if self.x >= WIDTH or self.x <= 0:
-            self.angle = 180 - self.angle
-            if self.speed <= self.maxspeed:
-                self.speed += 3
-        if self.y >= HEIGHT or self.y <= 0:
-            self.angle = 360 - self.angle
-            if self.speed <= self.maxspeed:
-                self.speed += 3
-        """
