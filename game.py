@@ -23,8 +23,8 @@ class Game:
         # Ball
         self.ball = ball
 
-        # Game - paused flag
-        self.paused = True
+        # Paused flag
+        self.paused = False
 
         # Server context
         self.context = context
@@ -79,6 +79,7 @@ class Game:
         if paused is None:
             return
 
+
         # Set game state - players
         try:
             if self.context.playAs == "2":
@@ -105,9 +106,9 @@ class Game:
             self.ball.update_coords()
 
             # Set game state - paused
-            self.paused = False
+            self.paused = (paused == "true")
         except Exception as e:
-            pass
+            print(e)
 
 
 def build_player_update_message(context, game):
@@ -165,44 +166,48 @@ def main_loop(context):
     text_pause_rect.center = (WIDTH // 2, HEIGHT // 2)
 
     # Create variable
-    running = True
+    context.Running = True
 
     # Create clock for gameloop
     clock = pygame.time.Clock()
 
     # main loop
-    while running:
+    while context.Running:
         # event handling, gets all event from the event queue
-        for event in pygame.event.get():
+        for event in list(pygame.event.get()):
             # only do something if the event is of type QUIT
             if event.type == pygame.QUIT:
                 # change the value to False, to exit the main loop
                 context.menu_game.enable()
                 print("game end")
-                running = False
+                # Send quit event - ignore response
+                msg_abandon = "<id:{};rid:{};type:2500;|playerID:{};>".format(context.client.messageSent,
+                                                                      context.client.messageSent,
+                                                                      context.client.playerID)
+                context.client.socket.send(bytes(msg_abandon, "ascii"))
+                context.Running = False
 
         # Parse all messages
-        while context.parser.messages_game:
+        while context.parser.messages_game and context.Running:
             server_message = context.parser.messages_game.popleft()
             # GameState update message
             if server_message.type == 2400:
                 game.update_state(server_message)
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_LEFT] and not game.paused:
             if game.player1.control:
                 game.player1.move_left(PLAYER_SPEED)
             if game.player2.control:
                 game.player2.move_left(PLAYER_SPEED)
 
-        if keys[pygame.K_RIGHT]:
+        if keys[pygame.K_RIGHT] and not game.paused:
             if game.player1.control:
                 game.player1.move_right(PLAYER_SPEED)
             if game.player2.control:
                 game.player2.move_right(PLAYER_SPEED)
 
-        if keys[pygame.K_u]:
-            game.paused = not game.paused
+        # Control+Q to end
 
         # Send current position to server
         msg = build_player_update_message(context, game)
@@ -211,34 +216,32 @@ def main_loop(context):
         # Clear screen
         context.surface.fill(BLACK)
 
+        # Game logic
+        all.update()
+
+        # draw center line
+        pygame.draw.rect(context.surface, WHITE, [0, HEIGHT / 2, WIDTH, 1])
+
+        # Game render
+        all.draw(context.surface)
+
+        # Draw score
+        score_font = pygame.font.Font('freesansbold.ttf', 20)
+
+        score1_string = "{:02d}".format(game.score1)
+        score1_text = score_font.render(score1_string, True, WHITE, BLACK)
+        score1_rect = score1_text.get_rect()
+        context.surface.blit(score1_text, (WIDTH - 30, HEIGHT // 2 - 25))
+
+        score2_string = "{:02d}".format(game.score2)
+        score2_text = score_font.render(score2_string, True, WHITE, BLACK)
+        score2_rect = score2_text.get_rect()
+        context.surface.blit(score2_text, (WIDTH - 30, HEIGHT // 2 + 5))
+
         if game.paused:
             # Game is paused, draw pause info
+            print("PAUSED")
             context.surface.blit(text_pause, text_pause_rect)
-        else:
-            # Game logic
-            all.update()
-
-            # Clear clear
-            context.surface.fill(BLACK)
-
-            # draw center line
-            pygame.draw.rect(context.surface, WHITE, [0, HEIGHT / 2, WIDTH, 1])
-
-            # Game render
-            all.draw(context.surface)
-
-            # Draw score
-            score_font = pygame.font.Font('freesansbold.ttf', 20)
-
-            score1_string = "{:02d}".format(game.score1)
-            score1_text = score_font.render(score1_string, True, WHITE, BLACK)
-            score1_rect = score1_text.get_rect()
-            context.surface.blit(score1_text, (WIDTH - 30, HEIGHT // 2 - 25))
-
-            score2_string = "{:02d}".format(game.score2)
-            score2_text = score_font.render(score2_string, True, WHITE, BLACK)
-            score2_rect = score2_text.get_rect()
-            context.surface.blit(score2_text, (WIDTH - 30, HEIGHT // 2 + 5))
 
         # Update screen
         pygame.display.flip()

@@ -1,4 +1,5 @@
 import socket
+import time
 
 
 class Client:
@@ -10,10 +11,17 @@ class Client:
         self.playerID = None
         self.messageSent = 0
         self.connect()
+        self.keepAlive = time.time()
 
     def connect(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
+
+    def is_connected(self):
+        return time.time() - self.keepAlive <= 2
+
+    def refresh_keepalive(self):
+        self.keepAlive = time.time()
 
 
 def request_disconnect(context):

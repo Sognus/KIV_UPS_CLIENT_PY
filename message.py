@@ -55,7 +55,7 @@ class DataReader(threading.Thread):
                 if not data:
                     continue
                 else:
-                    #print("{}\n".format(data.decode(encoding="ascii")))
+                    print("{}\n".format(data.decode(encoding="ascii")))
                     self.message_parser.msg += data.decode(encoding="ascii")
 
         print("Data reader disabled")
@@ -245,7 +245,6 @@ class MessageDecoder(threading.Thread):
                 new_message.add_content(key, value)
 
             if not content_error:
-                print(new_message.content)
                 if new_message.type in self.control_messages:
                     self.message_parser.messages.append(new_message)
                 if new_message.type in self.game_messages:
@@ -483,12 +482,19 @@ class MessageParser(threading.Thread):
         # data buffer
         self.msg = ""
 
+        # Threads
+        self.threadDecode = None
+        self.threadRead = None
+
+    def stop(self):
+        self.running = False
+
     def run(self):
-        threadRead = DataReader(self)
-        threadDecode = MessageDecoder(self)
+        self.threadRead = DataReader(self)
+        self.threadDecode = MessageDecoder(self)
 
-        threadRead.start()
-        threadDecode.start()
+        self.threadRead.start()
+        self.threadDecode.start()
 
-        threadRead.join()
-        threadDecode.join()
+        self.threadRead.join()
+        self.threadDecode.join()

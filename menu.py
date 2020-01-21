@@ -14,6 +14,23 @@ import re
 global context
 
 
+class KeepAliveThread(threading.Thread):
+
+    def __init__(self, client):
+        super().__init__()
+        self.client = client
+        self.running = True
+
+    def run(self):
+        try:
+            while self.running:
+                msg = "<id:0;rid:0;type:1100;|status:ok;>"
+                self.client.socket.send(bytes(msg, "ascii"))
+                time.sleep(0.5)
+        except Exception as e:
+            print(e)
+
+
 # Empty action to satisfy buttons
 def menu_nothing():
     pass
@@ -26,7 +43,7 @@ def menu_player_action_game_join(gameID):
 
     request_id = context.client.messageSent
     request_msg = "<id:{};rid:{};type:2100;|playerID:{};gameID:{};>".format(request_id, request_id,
-    context.client.playerID, gameID)
+                                                                            context.client.playerID, gameID)
     context.client.socket.send(bytes(request_msg, "ascii"))
     context.client.messageSent = request_id + 1
 
@@ -246,6 +263,12 @@ def menu_connect_action():
                 playerID = int(message.get_value("playerID"))
                 context.client.playerID = playerID
                 print("Connected to server as player ID: {}".format(playerID))
+
+                # Start keepalive thread
+                context.keepalive_thread = KeepAliveThread(context.client)
+                context.keepalive_thread.daemon = True
+                context.keepalive_thread.start()
+
                 context.menu_connect.disable()
                 context.menu_game.enable()
             else:
@@ -318,10 +341,7 @@ def menu_start(client_context):
         context.surface.fill(BLACK)
 
         # Application events
-        events = pygame.event.get()
-        for event in events:
-            if event.type == pygame.QUIT:
-                exit(0)
+        events = list(pygame.event.get())
 
         if context.menu_connect.is_enabled():
             # Connection menu
@@ -330,10 +350,11 @@ def menu_start(client_context):
             if context.menu_game.is_enabled():
                 # Player menu - Starts after Connect menu is disabled
                 menu_player_action_refresh()
-                context.menu_game.mainloop(events)
+                context.menu_game.mainloop()
             else:
                 # Main game loop
                 game.main_loop(context)
+
 
         # Flip surface
         pygame.display.flip()
