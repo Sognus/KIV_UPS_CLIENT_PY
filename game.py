@@ -170,6 +170,15 @@ def main_loop(context):
 
     # main loop
     while context.Running:
+        # Check if connection is dead if it is, stop game and return player to CONNECT MENU
+        if context.client is None or not context.client.is_connected():
+            context.menu_game.disable()
+            context.menu_connect.enable()
+            context.Running = False
+            break
+
+
+
         # event handling, gets all event from the event queue
         for event in list(pygame.event.get()):
             # only do something if the event is of type QUIT
@@ -181,7 +190,10 @@ def main_loop(context):
                 msg_abandon = "<id:{};rid:{};type:2500;|playerID:{};>".format(context.client.messageSent,
                                                                       context.client.messageSent,
                                                                       context.client.playerID)
-                context.client.socket.send(bytes(msg_abandon, "ascii"))
+                try:
+                    context.client.socket.send(bytes(msg_abandon, "ascii"))
+                except:
+                    pass
                 context.Running = False
 
         # Parse all messages
@@ -223,7 +235,10 @@ def main_loop(context):
 
         # Send current position to server
         msg = build_player_update_message(context, context.game)
-        context.client.socket.send(bytes(msg, "ascii"))
+        try:
+            context.client.socket.send(bytes(msg, "ascii"))
+        except:
+            pass
 
         # Clear screen
         context.surface.fill(BLACK)

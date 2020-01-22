@@ -67,7 +67,10 @@ def menu_player_action_game_join(gameID):
     request_id = context.client.messageSent
     request_msg = "<id:{};rid:{};type:2100;|playerID:{};gameID:{};>".format(request_id, request_id,
                                                                             context.client.playerID, gameID)
-    context.client.socket.send(bytes(request_msg, "ascii"))
+    try:
+        context.client.socket.send(bytes(request_msg, "ascii"))
+    except:
+        pass
     context.client.messageSent = request_id + 1
 
     # Wait for response maximum of 2 sec
@@ -118,7 +121,10 @@ def menu_player_action_game_create():
     # Send request to server to join game
     request_id = context.client.messageSent
     request_msg = "<id:{};rid:{};type:2000;|playerID:{};>".format(request_id, request_id, context.client.playerID)
-    context.client.socket.send(bytes(request_msg, "ascii"))
+    try:
+        context.client.socket.send(bytes(request_msg, "ascii"))
+    except:
+        pass
     context.client.messageSent = request_id + 1
 
     # Wait for response maximum of 2 sec
@@ -179,7 +185,10 @@ def menu_player_action_refresh():
     # Ask server for game IDS
     request_id = context.client.messageSent
     request_msg = "<id:{};rid:{};type:2300;|playerID:{};>".format(request_id, request_id, context.client.playerID)
-    context.client.socket.send(bytes(request_msg, "ascii"))
+    try:
+        context.client.socket.send(bytes(request_msg, "ascii"))
+    except:
+        pass
     context.client.messageSent = request_id + 1
 
     # Wait for response maximum of 2 sec
@@ -264,7 +273,10 @@ def menu_reconnect_action():
         # Send register request
         request_id = context.client.messageSent
         register_msg = "<id:{};rid:{};type:2200;|username:{};>".format(request_id, request_id, data["name"])
-        context.client.socket.send(bytes(register_msg, "ascii"))
+        try:
+            context.client.socket.send(bytes(register_msg, "ascii"))
+        except:
+            pass
 
         # Wait for response maximum of 2 sec
         message = None
@@ -346,7 +358,10 @@ def menu_connect_action():
         # Send register request
         request_id = context.client.messageSent
         register_msg = "<id:{};rid:{};type:1000;|name:{};>".format(request_id, request_id, data["name"])
-        context.client.socket.send(bytes(register_msg, "ascii"))
+        try:
+            context.client.socket.send(bytes(register_msg, "ascii"))
+        except:
+            pass
 
         # Wait for response maximum of 2 sec
         message = None
