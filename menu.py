@@ -42,6 +42,9 @@ class KeepAliveThread(threading.Thread):
             self.context.menu_game.disable()
             # Stop game
             self.context.Running = False
+        except AttributeError:
+            self.running = False
+            pass
 
 
 def show_alert_info(title, message):
