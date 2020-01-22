@@ -35,6 +35,11 @@ def request_disconnect(context):
         pass
 
     try:
+        context.keepalive_thread.running = False
+    except:
+        pass
+
+    try:
         # Try to send server info to cleanup connection
         disconnect_msg = "<id:{};rid:0;type:20;|playerID:{};>".format(context.client.messageSent,
                                                                       context.client.playerID)

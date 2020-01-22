@@ -1,11 +1,8 @@
-import sys
-from datetime import datetime
-
-from constants import *
-from colors import *
-from player import *
-from ball import *
 import pygame
+import tkinter
+from tkinter import messagebox
+from ball import *
+from player import *
 
 
 class Game:
@@ -151,7 +148,7 @@ def main_loop(context):
     ball = Ball(WIDTH / 2, HEIGHT / 2, 0)
 
     # Initialize Game
-    game = Game(player1, player2, ball, context)
+    context.game = Game(player1, player2, ball, context)
 
     # Initialize game groups
     all = pygame.sprite.RenderUpdates()
@@ -192,25 +189,40 @@ def main_loop(context):
             server_message = context.parser.messages_game.popleft()
             # GameState update message
             if server_message.type == 2400:
-                game.update_state(server_message)
+                context.game.update_state(server_message)
+            if server_message.type == 3100:
+                context.Running = False
+
+                # Show alert - main window hidden
+                root = tkinter.Tk()
+                root.withdraw()
+
+                box_msg = "" if server_message.get_value("msg") is None else server_message.get_value("msg")
+                messagebox.showinfo("Game completed", box_msg)
+
+                # kill alert window
+                root.destroy()
+
+                context.menu_game.enable()
+                print("game completed")
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT] and not game.paused:
-            if game.player1.control:
-                game.player1.move_left(PLAYER_SPEED)
-            if game.player2.control:
-                game.player2.move_left(PLAYER_SPEED)
+        if keys[pygame.K_LEFT] and not context.game.paused:
+            if context.game.player1.control:
+                context.game.player1.move_left(PLAYER_SPEED)
+            if context.game.player2.control:
+                context.game.player2.move_left(PLAYER_SPEED)
 
-        if keys[pygame.K_RIGHT] and not game.paused:
-            if game.player1.control:
-                game.player1.move_right(PLAYER_SPEED)
-            if game.player2.control:
-                game.player2.move_right(PLAYER_SPEED)
+        if keys[pygame.K_RIGHT] and not context.game.paused:
+            if context.game.player1.control:
+                context.game.player1.move_right(PLAYER_SPEED)
+            if context.game.player2.control:
+                context.game.player2.move_right(PLAYER_SPEED)
 
         # Control+Q to end
 
         # Send current position to server
-        msg = build_player_update_message(context, game)
+        msg = build_player_update_message(context, context.game)
         context.client.socket.send(bytes(msg, "ascii"))
 
         # Clear screen
@@ -228,17 +240,17 @@ def main_loop(context):
         # Draw score
         score_font = pygame.font.Font('freesansbold.ttf', 20)
 
-        score1_string = "{:02d}".format(game.score1)
+        score1_string = "{:02d}".format(context.game.score1)
         score1_text = score_font.render(score1_string, True, WHITE, BLACK)
         score1_rect = score1_text.get_rect()
         context.surface.blit(score1_text, (WIDTH - 30, HEIGHT // 2 - 25))
 
-        score2_string = "{:02d}".format(game.score2)
+        score2_string = "{:02d}".format(context.game.score2)
         score2_text = score_font.render(score2_string, True, WHITE, BLACK)
         score2_rect = score2_text.get_rect()
         context.surface.blit(score2_text, (WIDTH - 30, HEIGHT // 2 + 5))
 
-        if game.paused:
+        if context.game.paused:
             # Game is paused, draw pause info
             print("PAUSED")
             context.surface.blit(text_pause, text_pause_rect)

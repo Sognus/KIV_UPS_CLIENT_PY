@@ -20,10 +20,14 @@ class Context:
         self.parser = None
         # Indicate which User is player playing as
         self.playAs = None
+        # Indicate registered name
+        self.username = None
         # Indicate if game is running
         self.Running = False
         # KeepAlive thread
         self.keepalive_thread = None
+        # Game
+        self.game = None
 
     def menu_background_draw(self):
         if self.surface is not None:

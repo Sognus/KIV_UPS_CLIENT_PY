@@ -81,6 +81,7 @@ class MessageDecoder(threading.Thread):
         # Setup ids for routing
         self.game_messages = list()
         self.control_messages = list()
+        self.keepalive_messages = list()
 
         # Control messages
         self.control_messages.append(1000)          # User register
@@ -91,6 +92,10 @@ class MessageDecoder(threading.Thread):
 
         # Game messages
         self.game_messages.append(2400)             # Game state
+        self.game_messages.append(3100)
+
+        # KeepAlive
+        self.keepalive_messages.append(1100)        # KeepAlive
 
     def is_control_character(self, character):
         return character in self.control_characters
@@ -245,10 +250,15 @@ class MessageDecoder(threading.Thread):
                 new_message.add_content(key, value)
 
             if not content_error:
+                # Add message to control messages
                 if new_message.type in self.control_messages:
                     self.message_parser.messages.append(new_message)
+                # Add message to game messages
                 if new_message.type in self.game_messages:
                     self.message_parser.messages_game.append(new_message)
+                # Add message to keepalive control
+                if new_message.type in self.keepalive_messages:
+                    self.message_parser.messages_keepalive.append(new_message)
 
 
         print("Message decoder disabled")
@@ -261,7 +271,7 @@ class MessageDecoder(threading.Thread):
         while True:
             # Check wait limit
             if limit_header < 1:
-                return "error - wait exceeded"
+                return "", "error - wait exceeded"
 
             # If we dont have data we wait for some
             if len(self.message_parser.msg) < 1:
@@ -475,8 +485,10 @@ class MessageParser(threading.Thread):
         self.client.socket.setblocking(0)
         # Parsed messages list - control (FIFO QUEUE)
         self.messages = collections.deque(list())
-        # Parsed messages list - control (FIFO QUEUE)
+        # Parsed messages list - game messages (FIFO QUEUE)
         self.messages_game = collections.deque(list())
+        # KeepAlive messages list - keep alive messages (FIFO QUEUE)
+        self.messages_keepalive = collections.deque(list())
         # Indicate running flag
         self.running = True
         # data buffer

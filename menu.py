@@ -1,5 +1,6 @@
 import sys
-
+import tkinter
+from tkinter import messagebox
 from constants import *
 from colors import *
 from client import *
@@ -16,9 +17,10 @@ global context
 
 class KeepAliveThread(threading.Thread):
 
-    def __init__(self, client):
+    def __init__(self, client, context):
         super().__init__()
         self.client = client
+        self.context = context
         self.running = True
 
     def run(self):
@@ -27,8 +29,30 @@ class KeepAliveThread(threading.Thread):
                 msg = "<id:0;rid:0;type:1100;|status:ok;>"
                 self.client.socket.send(bytes(msg, "ascii"))
                 time.sleep(0.5)
-        except Exception as e:
-            print(e)
+                # Retreive keepalive
+                while context.parser.messages_keepalive:
+                    message = context.parser.messages_keepalive.popleft()
+                    self.client.keepAlive = time.time()
+
+        except socket.error as e:
+            self.client.keepAlive = 0
+            print("KeepAliveErr: " + str(self.client.is_connected()))
+            # Put player into menu
+            self.context.menu_connect.enable()
+            self.context.menu_game.disable()
+            # Stop game
+            self.context.Running = False
+
+
+def show_alert_info(title, message):
+    # Show alert - main window hidden
+    root = tkinter.Tk()
+    root.withdraw()
+
+    messagebox.showinfo(title, message)
+
+    # kill alert window
+    root.destroy()
 
 
 # Empty action to satisfy buttons
@@ -36,7 +60,6 @@ def menu_nothing():
     pass
 
 
-# TODO: Implement
 def menu_player_action_game_join(gameID):
     # gameID = ID if game to join
     print("Requesting game join")
@@ -64,10 +87,12 @@ def menu_player_action_game_join(gameID):
 
     if message is None:
         print("Cannot join game - wait for response timed out")
+        show_alert_info("Cannot join game" , "Wait for server response timed out!")
     else:
         status = message.get_value("status")
         if status is None:
             print("Cannot join game - bad server response")
+            show_alert_info("Cannot join game", "Bad server response")
         else:
             # Game join?
             if status == "ok":
@@ -75,6 +100,7 @@ def menu_player_action_game_join(gameID):
                 playAs = message.get_value("player")
                 if playAs is None:
                     print("Cannot create game - bad server response")
+                    show_alert_info("Cannot join game", "Bad server response!")
                 else:
                     context.playAs = playAs
                     # Enable game
@@ -82,6 +108,7 @@ def menu_player_action_game_join(gameID):
             else:
                 status_msg = "unknown error" if message.get_value("msg") is None else message.get_value("msg")
                 print("Game was not joined: " + status_msg)
+                show_alert_info("Cannot join game", status_msg)
 
 
 # TODO: Implement
@@ -111,11 +138,12 @@ def menu_player_action_game_create():
 
     if message is None:
         print("Cannot create game - wait for response timed out")
+        show_alert_info("Cannot create game" , "Wait for server response timed out!")
     else:
         status = message.get_value("status")
         if status is None:
             print("Cannot create game - bad server response")
-            # TODO: inform server
+            show_alert_info("Cannot create game", "Bad server response")
         else:
             # Game created
             if status == "ok":
@@ -126,10 +154,7 @@ def menu_player_action_game_create():
             else:
                 status_msg = "unknown error" if message.get_value("msg") is None else message.get_value("msg")
                 print("Game was not created: " + status_msg)
-
-
-def menu_player_action_test():
-    context.menu_game.disable()
+                show_alert_info("Cannot create game", status_msg)
 
 
 def menu_player_action_disconnect():
@@ -199,9 +224,6 @@ def menu_player_action_refresh():
     # Disconnect button
     context.menu_game.add_option("DISCONNECT", menu_player_action_disconnect)
 
-    # Temporary menu buttons
-    context.menu_game.add_option("TEST", menu_player_action_test)
-
 
 def menu_player_init():
     # Connected menu
@@ -225,12 +247,94 @@ def menu_player_init():
                                         menu_color_title=(20, 32, 52),
                                         )
 
+def menu_reconnect_action():
+    try:
+        data = context.menu_connect.get_input_data()
+
+        if len(data["name"]) < 1:
+            show_alert_info("Cannot reconnect", "Name cannot be empty")
+            print("Could not connect to server - name cannot be empty!")
+            return
+
+        context.client = Client(data["ip"], int(data["port"]))
+        print("Connection reestablished\n")
+        context.parser = MessageParser(context.client)
+        context.parser.start()
+
+        # Send register request
+        request_id = context.client.messageSent
+        register_msg = "<id:{};rid:{};type:2200;|username:{};>".format(request_id, request_id, data["name"])
+        context.client.socket.send(bytes(register_msg, "ascii"))
+
+        # Wait for response maximum of 2 sec
+        message = None
+        start = datetime.now()
+        wait = True
+        while wait:
+            for msg in list(context.parser.messages):
+                if int(msg.id) == int(request_id):
+                    message = msg
+                    wait = False
+            check = datetime.now()
+            delta = check - start
+            if delta.total_seconds() > 60:
+                wait = False
+
+        if message is not None:
+            if message.get_value("status") == "ok":
+                gameID = message.get_value("gameID")
+                playerID = message.get_value("playerID")
+                playAs = message.get_value("playas")
+
+                if playerID is None:
+                    raise Exception("Malformed response from server - missing playerID")
+
+                # Reset playerID
+                context.client.playerID = int(playerID)
+
+                # Start keepalive thread
+                context.keepalive_thread = KeepAliveThread(context.client, context)
+                context.keepalive_thread.daemon = True
+                context.keepalive_thread.start()
+
+                # We have info about playas and gameID
+                if gameID is not None and playAs is not None:
+                    context.playAs = playAs
+                    # Enable game
+                    context.menu_connect.disable()
+                    context.menu_game.disable()
+
+                else:
+                    # Player is not connected to game - put him in game menu
+                    context.menu_connect.disable()
+                    context.menu_game.enable()
+
+            else:
+                raise Exception("Could not connect to server - {}".format(message.get_value("msg")))
+        else:
+            raise Exception("no valid response from server")
+
+    except ConnectionRefusedError:
+        print("Could not reconnect to server - connection refused")
+        request_disconnect(context)
+        show_alert_info("Cannot reconnect", "Connection refused")
+    except ValueError:
+        print("Could not reconnect to server - bad input data")
+        request_disconnect(context)
+        show_alert_info("Cannot reconnect", "Wrong response data format")
+    except Exception as e:
+        print(f"Could not reconnect to server - {e}")
+        request_disconnect(context)
+        show_alert_info("Cannot reconnect", str(e))
+
+
 
 def menu_connect_action():
     try:
         data = context.menu_connect.get_input_data()
 
         if len(data["name"]) < 1:
+            show_alert_info("Cannot connect to server", "Name cannot be empty")
             print("Could not connect to server - name cannot be empty!")
             return
 
@@ -264,8 +368,10 @@ def menu_connect_action():
                 context.client.playerID = playerID
                 print("Connected to server as player ID: {}".format(playerID))
 
+                context.username = data["name"]
+
                 # Start keepalive thread
-                context.keepalive_thread = KeepAliveThread(context.client)
+                context.keepalive_thread = KeepAliveThread(context.client, context)
                 context.keepalive_thread.daemon = True
                 context.keepalive_thread.start()
 
@@ -279,12 +385,15 @@ def menu_connect_action():
     except ConnectionRefusedError:
         print("Could not connect to server - connection refused")
         request_disconnect(context)
+        show_alert_info("Cannot connect to server", "Connection refused")
     except ValueError:
         print("Could not connect to server - bad input data")
         request_disconnect(context)
+        show_alert_info("Cannot connect to server", "Wrong response format")
     except Exception as e:
         print(f"Could not connect to server - {e}")
         request_disconnect(context)
+        show_alert_info("Cannot connect to server", str(e))
 
 
 def menu_start(client_context):
@@ -324,10 +433,13 @@ def menu_start(client_context):
                                            )
 
     # Add Menu input
-    context.menu_connect.add_text_input("Name: ", default="", maxchar=20, textinput_id="name")
+    connect_username = "" if context.username is None else context.username
+
+    context.menu_connect.add_text_input("Name: ", default=connect_username, maxchar=20, textinput_id="name")
     context.menu_connect.add_text_input("IP: ", default="192.168.0.200", maxchar=15, textinput_id="ip")
     context.menu_connect.add_text_input("Port: ", default="8080", maxchar=5, textinput_id="port")
     context.menu_connect.add_option("CONNECT", menu_connect_action)
+    context.menu_connect.add_option("RECONNECT", menu_reconnect_action)
 
     # Connected menu
     menu_player_init()
