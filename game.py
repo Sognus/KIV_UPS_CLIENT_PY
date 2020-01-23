@@ -1,3 +1,5 @@
+import sys
+
 import pygame
 import tkinter
 from tkinter import messagebox
@@ -75,7 +77,6 @@ class Game:
         paused = message.get_value("paused")
         if paused is None:
             return
-
 
         # Set game state - players
         try:
@@ -177,24 +178,25 @@ def main_loop(context):
             context.Running = False
             break
 
-
-
         # event handling, gets all event from the event queue
         for event in list(pygame.event.get()):
             # only do something if the event is of type QUIT
             if event.type == pygame.QUIT:
-                # change the value to False, to exit the main loop
-                context.menu_game.enable()
-                print("game end")
-                # Send quit event - ignore response
-                msg_abandon = "<id:{};rid:{};type:2500;|playerID:{};>".format(context.client.messageSent,
-                                                                      context.client.messageSent,
-                                                                      context.client.playerID)
-                try:
-                    context.client.socket.send(bytes(msg_abandon, "ascii"))
-                except:
-                    pass
-                context.Running = False
+                sys.exit(0)
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    # change the value to False, to exit the main loop
+                    context.menu_game.enable()
+                    print("game end")
+                    # Send quit event - ignore response
+                    msg_abandon = "<id:{};rid:{};type:2500;|playerID:{};>".format(context.client.messageSent,
+                                                                                  context.client.messageSent,
+                                                                                  context.client.playerID)
+                    try:
+                        context.client.socket.send(bytes(msg_abandon, "ascii"))
+                    except:
+                        pass
+                    context.Running = False
 
         # Parse all messages
         while context.parser.messages_game and context.Running:

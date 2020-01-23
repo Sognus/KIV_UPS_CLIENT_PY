@@ -316,13 +316,16 @@ def menu_reconnect_action():
                 if gameID is not None and playAs is not None:
                     context.playAs = playAs
                     # Enable game
-                    context.menu_connect.disable()
                     context.menu_game.disable()
-
+                    context.menu_connect.disable()
+                    # Info
+                    print("Reconnected to game")
                 else:
                     # Player is not connected to game - put him in game menu
                     context.menu_connect.disable()
                     context.menu_game.enable()
+                    # Game was not joined
+                    print("Reconnected to lobby")
 
             else:
                 raise Exception("Could not connect to server - {}".format(message.get_value("msg")))
